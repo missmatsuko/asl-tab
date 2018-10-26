@@ -4,6 +4,6 @@
   "version": "1.0",
   "description": "Loads a random LifePrint ASL instructional video in new tabs.",
   "chrome_url_overrides": {
-    "newtab": "/new-tab.html"
+    "newtab": "/newTab.html"
   }
 }
