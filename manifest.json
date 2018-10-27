@@ -3,6 +3,11 @@
   "name": "ASL Tab",
   "version": "1.0",
   "description": "Loads a random LifePrint ASL instructional video in new tabs.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "chrome_url_overrides": {
     "newtab": "/newTab.html"
   },
