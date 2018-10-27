@@ -3,15 +3,17 @@ html, body {
   background-color: black;
   color: white;
   height: 100%;
-}
-
-body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  font-family: 'Cousine', monospace;
 }
 
 main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100%;
+}
+
+.content-wrapper {
   width: 100%;
   max-width: 50rem;
   padding: 1em;
