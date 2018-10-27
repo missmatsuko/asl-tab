@@ -15,6 +15,7 @@ const ENDPOINT_PARAMS_ARRAY = Object.entries(ENDPOINT_PARAMS).map(([key, value])
 // iframe element
 const iframeId = 'iframe';
 const iframeElement = document.getElementById(iframeId);
+const pageHeading = document.getElementById('pageHeading');
 
 // Set up endpoint URL
 const url = `${ENDPOINT_BASE_URL}?${ENDPOINT_PARAMS_ARRAY.join('&')}`;
@@ -31,8 +32,8 @@ fetch(url)
     const randomVideoIndex = Math.floor(Math.random() * numVideos);
     iframeElement.src += `&index=${ randomVideoIndex }`;
 
+    // Wait until iFrame src changes
     setTimeout(() => {
-      // Change playlist iframe to single video iframe
       youtubeIframeApiPromise.then(() => {
         const player = new YT.Player(iframeId, {
           events: {
@@ -44,6 +45,18 @@ fetch(url)
 
               player.loadVideoById(videoId);
               player.playVideo();
+
+              // Update title and heading text
+              fetch(`https://www.googleapis.com/youtube/v3/videos?key=${YOUTUBE_API_KEY}&part=snippet&id=${videoId}`)
+              .then(response => response.json())
+              .then((data) => {
+                if (data.items.length) {
+                  const videoTitle = data.items[0].snippet.title;
+                  document.title += ` | ${ videoTitle }`;
+                  pageHeading.textContent = videoTitle;
+                }
+              })
+              .catch(error => console.error('Error:', error));
             },
             onStateChange: (event) => {
               // Fake loop the video
