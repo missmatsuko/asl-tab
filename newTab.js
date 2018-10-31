@@ -1,20 +1,14 @@
 // Global Variables
 const YOUTUBE_API_KEY = 'AIzaSyCdZdNVQ6XbhA1AQQ1ZDK1qZCXitP6RPOA';
 const PLAYLIST_ID = 'UUZy9xs6Tn9vWqN_5l0EEIZA';
-const MAX_VIDEO_DURATION = 10; // max duration of videos to play, in seconds
-const MIN_VIDEO_REPEAT_DURATION = 1; // how long to wait until the same video should be allowed to repeat
-const STORED_NUM_VIDEOS_DURATION = 7 * 24 * 60 * 60; // 7 days, in seconds
-const STORED_VIDEO_POSITION_DURATION = 1 * 24 * 60 * 60; // 1 day, in seconds
+const MAX_VIDEO_DURATION = 10; // Max duration of videos to play, in seconds
+const STORED_NUM_VIDEOS_DURATION = 7 * 24 * 60 * 60; // Duration to store number of videos in playlist; 7 days, in seconds
+const STORED_VIDEO_POSITION_DURATION = 1 * 24 * 60 * 60; // Duration to store video position; 1 day, in seconds
 const IFRAME_ID = 'iframe';
 const NUM_VIDEOS_IN_PLAYLIST_EMBED = 100; // Number of videos that are supposed to be in an embedded playlist
 
 let player = null;
-
-// Variables related to numVideos
 let numVideos = NUM_VIDEOS_IN_PLAYLIST_EMBED; // Number of videos available to randomize from
-const storedNumVideos = localStorage.getItem('NUM_VIDEOS');
-const storedNumVideosDate = localStorage.getItem('NUM_VIDEOS_DATE');
-const storedNumVideosExpired = Date.now() - storedNumVideosDate > STORED_NUM_VIDEOS_DURATION;
 
 // DOM Elements
 let iFrameElement = document.getElementById(IFRAME_ID);
@@ -39,13 +33,11 @@ const checkVideo = function() {
   const playerVideoIndex = player.getPlaylistIndex();
   const videoDuration = player.getDuration(); // seconds
 
-  // If the video duration is too long, try a different video
   if (videoDuration > MAX_VIDEO_DURATION) {
     return false;
   }
 
-  // If the videoIndex doesn't match randomVideoIndex, try a different video within 100
-  // Thinking it means getting a video outside of NUM_VIDEOS_IN_PLAYLIST_EMBED stopped working
+  // If the videoIndex doesn't match randomVideoIndex, try a different video within 100 (thinking it means the getting a video outside of NUM_VIDEOS_IN_PLAYLIST_EMBED hack stopped working)
   if (iframeVideoIndex !== playerVideoIndex) {
     numVideos = NUM_VIDEOS_IN_PLAYLIST_EMBED;
     return false;
@@ -58,7 +50,7 @@ const checkVideo = function() {
 const getRandomVideoPosition = function() {
   const randomVideoPosition = Math.floor(Math.random() * numVideos);
   const storedVideoPositionDate = localStorage.getItem(randomVideoPosition);
-  const storedVideoPositionExpired = Date.now() - storedNumVideosDate > STORED_VIDEO_POSITION_DURATION;
+  const storedVideoPositionExpired = Date.now() - storedVideoPositionDate > STORED_VIDEO_POSITION_DURATION;
 
   // Re-roll once if the video position is not expired
   if (!storedVideoPositionExpired) {
@@ -154,6 +146,7 @@ const playRandomVideo = async function() {
         },
         onStateChange: (event) => {
           // Fake loop the video
+          // NOTE: Playlists can be looped via YouTube API, but single videos cannot
           if (event.data === YT.PlayerState.ENDED) {
             player.playVideo();
           }
@@ -172,32 +165,38 @@ const youtubeIframeApiPromise = new Promise((resolve, reject) => {
   }
 });
 
-// Update numVideos
-if (!storedNumVideosExpired && storedNumVideos >= NUM_VIDEOS_IN_PLAYLIST_EMBED) {
-  // Use the value from LocalStorage
-  numVideos = storedNumVideos;
-} else {
-  // Use the actual number of videos in playlist
-  fetch(
-    composeEndpointUrl(
-      'https://www.googleapis.com/youtube/v3/playlists',
-      {
-        'key': YOUTUBE_API_KEY,
-        'id': PLAYLIST_ID,
-        'part': 'contentDetails',
-      }
+const updateNumVideos = function() {
+  const storedNumVideos = localStorage.getItem('NUM_VIDEOS');
+  const storedNumVideosDate = localStorage.getItem('NUM_VIDEOS_DATE');
+  const storedNumVideosExpired = Date.now() - storedNumVideosDate > STORED_NUM_VIDEOS_DURATION;
+
+  if (!storedNumVideosExpired && storedNumVideos >= NUM_VIDEOS_IN_PLAYLIST_EMBED) {
+    // Use the value from LocalStorage
+    numVideos = storedNumVideos;
+  } else {
+    // Use the actual number of videos in playlist
+    fetch(
+      composeEndpointUrl(
+        'https://www.googleapis.com/youtube/v3/playlists',
+        {
+          'key': YOUTUBE_API_KEY,
+          'id': PLAYLIST_ID,
+          'part': 'contentDetails',
+        }
+      )
     )
-  )
-  .then(response => response.json())
-  .then((data) => {
-    if (data.items.length) {
-      numVideos = data.items[0].contentDetails.itemCount;
-      localStorage.setItem('NUM_VIDEOS', numVideos);
-      localStorage.setItem('NUM_VIDEOS_DATE', Date.now());
-    }
-  })
-  .catch(error => console.error('Error:', error));
+    .then(response => response.json())
+    .then((data) => {
+      if (data.items.length) {
+        numVideos = data.items[0].contentDetails.itemCount;
+        localStorage.setItem('NUM_VIDEOS', numVideos);
+        localStorage.setItem('NUM_VIDEOS_DATE', Date.now());
+      }
+    })
+    .catch(error => console.error('Error:', error));
+  }
 }
 
-// Play a random video
+// Main JS
+updateNumVideos();
 playRandomVideo();
