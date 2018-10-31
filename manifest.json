@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+  "name": "ASL Tab",
+  "version": "1.0",
+  "description": "Loads a random ASL instructional video in new tabs.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "chrome_url_overrides": {
+    "newtab": "/newTab.html"
+  },
+  "content_security_policy": "script-src 'self' https://www.youtube.com https://s.ytimg.com; object-src 'self'"
+}
