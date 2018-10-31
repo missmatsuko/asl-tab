@@ -3,8 +3,8 @@ const YOUTUBE_API_KEY = 'AIzaSyCdZdNVQ6XbhA1AQQ1ZDK1qZCXitP6RPOA';
 const PLAYLIST_ID = 'UUZy9xs6Tn9vWqN_5l0EEIZA';
 const MAX_VIDEO_DURATION = 10; // max duration of videos to play, in seconds
 const MIN_VIDEO_REPEAT_DURATION = 1; // how long to wait until the same video should be allowed to repeat
-const STORE_NUM_VIDEOS_DURATION = 7 * 24 * 60 * 60; // 7 days, in seconds
-const STORE_VIDEOS_DURATION = 1 * 24 * 60 * 60; // 1 day, in seconds
+const STORED_NUM_VIDEOS_DURATION = 7 * 24 * 60 * 60; // 7 days, in seconds
+const STORED_VIDEO_POSITION_DURATION = 1 * 24 * 60 * 60; // 1 day, in seconds
 const IFRAME_ID = 'iframe';
 const NUM_VIDEOS_IN_PLAYLIST_EMBED = 100; // Number of videos that are supposed to be in an embedded playlist
 
@@ -14,7 +14,7 @@ let player = null;
 let numVideos = NUM_VIDEOS_IN_PLAYLIST_EMBED; // Number of videos available to randomize from
 const storedNumVideos = localStorage.getItem('NUM_VIDEOS');
 const storedNumVideosDate = localStorage.getItem('NUM_VIDEOS_DATE');
-const storedNumVideosExpired = Date.now() - storedNumVideosDate <= STORE_NUM_VIDEOS_DURATION;
+const storedNumVideosExpired = Date.now() - storedNumVideosDate > STORED_NUM_VIDEOS_DURATION;
 
 // DOM Elements
 let iFrameElement = document.getElementById(IFRAME_ID);
@@ -56,7 +56,17 @@ const checkVideo = function() {
 
 // Get a random video position (1-indexed)
 const getRandomVideoPosition = function() {
-  return Math.floor(Math.random() * numVideos);
+  const randomVideoPosition = Math.floor(Math.random() * numVideos);
+  const storedVideoPositionDate = localStorage.getItem(randomVideoPosition);
+  const storedVideoPositionExpired = Date.now() - storedNumVideosDate > STORED_VIDEO_POSITION_DURATION;
+
+  // Re-roll once if the video position is not expired
+  if (!storedVideoPositionExpired) {
+    return Math.floor(Math.random() * numVideos);
+  } else {
+    localStorage.setItem(randomVideoPosition, Date.now());
+    return randomVideoPosition;
+  }
 }
 
 /*
@@ -66,7 +76,8 @@ const getRandomVideoPosition = function() {
   REF: https://developers.google.com/youtube/iframe_api_reference#playVideoAt
 */
 const playRandomVideo = async function() {
-  const randomVideoIndex = getRandomVideoPosition() - 1;
+  let randomVideoIndex = getRandomVideoPosition() - 1;
+
   const iFrameSrc = iFrameElement.src;
 
   if (player) {
