@@ -8,9 +8,9 @@ Chrome extension that loads a random ASL instructional video in new tabs. Conten
 - [Bart Nagel (@tremby)](https://github.com/tremby) for code helps
 
 ## Roadmap
-- [ ] Publish the Chrome extension
+- [x] Publish the Chrome extension
 - [ ] Port extension to other browsers:
-  - [ ] FireFox
+  - [x] FireFox
   - [ ] Edge (maybe)
 - [ ] Add server-side component:
   - [ ] Hide API key
