@@ -32,6 +32,19 @@ const insertIframe = function(src) {
   iframeContainerEl.appendChild(iframe);
 }
 
+// Replaces iframe src so it stops autoplaying
+// Workaround due to not being able to use YouTube iframe player API for Firefox
+const stopAutoplay = function() {
+  const iframe = iframeContainerEl.querySelector('iframe');
+  const iframeSrc = iframe.src;
+  const newIframeSrc = iframeSrc.replace('&autoplay=1', '');
+
+  if (iframeSrc !== newIframeSrc) {
+    iframe.remove();
+    insertIframe(newIframeSrc);
+  }
+}
+
 // Gets fresh videos data, returns false otherwise
 const getVideosData = async function() {
   const response = await fetch(VIDEOS_DATA_ENDPOINT);
@@ -85,6 +98,15 @@ const init = async function() {
 
   // Update heading text
   updateHeadingText(newHeadingText);
+
+  // Stop playing video when document is hidden, or when 1 minute passes
+  window.addEventListener('visibilitychange', (e) => {
+    if (document.hidden) {
+      stopAutoplay();
+    }
+  });
+
+  setTimeout(stopAutoplay, 60 * 1000);
 }
 
 // Run the program
