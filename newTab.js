@@ -3,7 +3,8 @@ const MAX_VIDEO_DURATION = 10; // Max duration of videos to play, in seconds
 const MAX_ROLL_COUNT = 50; // Max times to reroll for random video
 const REPEAT_VIDEO_DURATION = 24 * 60 * 60 * 1000; // Min (ideal) duration before repeating a video, in milliseconds
 const VIDEOS_DATA_ENDPOINT = 'https://s3.ca-central-1.amazonaws.com/asl-tab-api-data/data.json';
-const DEFAULT_IFRAME_SRC = 'https://www.youtube.com/embed/playlist?list=UUZy9xs6Tn9vWqN_5l0EEIZA&rel=0&mute=1'; // ASL signs playlist
+const DEFAULT_IFRAME_SRC = 'https://www.youtube.com/embed/playlist?list=UUZy9xs6Tn9vWqN_5l0EEIZA'; // ASL signs playlist
+const DEFAULT_IFRAME_QUERY_STRING = 'autoplay=1&loop=1&mute=1&rel=0';
 const DEFAULT_HEADING_TEXT = 'ASL Tab';
 
 let videosData = [];
@@ -103,13 +104,13 @@ const init = async function() {
     const videoTitle = videosItem.title;
 
     // NOTE: playlist param set to video ID to enable looping as looping is only enabled on playlist embeds and this magically makes it into a valid playlist
-    newIframeSrc = `https://www.youtube.com/embed/${ videoId }?&playlist=${ videoId }&loop=1&autoplay=1&mute=1`;
+    newIframeSrc = `https://www.youtube.com/embed/${ videoId }?&playlist=${ videoId }&${ DEFAULT_IFRAME_QUERY_STRING }`;
     newHeadingText = videoTitle;
   } else {
     // Embed a random video from the latest 100 items of the playlist
     // 100 is the actual amount of videos expected in the playlist
     const videoIndex = getRandomNumber(0, 100);
-    newIframeSrc = `${ DEFAULT_IFRAME_SRC }&index=${ videoIndex }&autoplay=1&mute=1`;
+    newIframeSrc = `${ DEFAULT_IFRAME_SRC }&index=${ videoIndex }&${ DEFAULT_IFRAME_QUERY_STRING }`;
   }
 
   // Insert the iFrame into page
