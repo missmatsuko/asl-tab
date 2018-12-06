@@ -1,5 +1,6 @@
 // Global Variables
 const MAX_VIDEO_DURATION = 10; // Max duration of videos to play, in seconds
+const MAX_ROLL_COUNT = 50; // Max times to reroll for random video
 const VIDEOS_DATA_ENDPOINT = 'https://s3.ca-central-1.amazonaws.com/asl-tab-api-data/data.json';
 const DEFAULT_IFRAME_SRC = 'https://www.youtube.com/embed/playlist?list=UUZy9xs6Tn9vWqN_5l0EEIZA&rel=0&mute=1'; // ASL signs playlist
 const DEFAULT_HEADING_TEXT = 'ASL Tab';
@@ -55,12 +56,14 @@ const getVideosData = async function() {
 const getVideosItem = function() {
   const videosDataLength = videosData.length;
   let videosItem = undefined;
+  let rollCount = 0;
 
   while (true) {
     const videoIndex = getRandomNumber(0, videosDataLength - 1);
     videosItem = videosData[videoIndex];
+    rollCount++;
 
-    if (videosItem.duration <= MAX_VIDEO_DURATION) {
+    if (rollCount > MAX_ROLL_COUNT || videosItem.duration <= MAX_VIDEO_DURATION) {
       break;
     }
   }
