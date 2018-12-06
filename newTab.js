@@ -1,202 +1,132 @@
 // Global Variables
-const YOUTUBE_API_KEY = 'AIzaSyCdZdNVQ6XbhA1AQQ1ZDK1qZCXitP6RPOA';
-const PLAYLIST_ID = 'UUZy9xs6Tn9vWqN_5l0EEIZA';
 const MAX_VIDEO_DURATION = 10; // Max duration of videos to play, in seconds
-const STORED_NUM_VIDEOS_DURATION = 7 * 24 * 60 * 60; // Duration to store number of videos in playlist; 7 days, in seconds
-const STORED_VIDEO_POSITION_DURATION = 1 * 24 * 60 * 60; // Duration to store video position; 1 day, in seconds
-const IFRAME_ID = 'iframe';
-const NUM_VIDEOS_IN_PLAYLIST_EMBED = 100; // Number of videos that are supposed to be in an embedded playlist
+const MAX_ROLL_COUNT = 50; // Max times to reroll for random video
+const REPEAT_VIDEO_DURATION = 24 * 60 * 60 * 1000; // Min (ideal) duration before repeating a video, in milliseconds
+const VIDEOS_DATA_ENDPOINT = 'https://s3.ca-central-1.amazonaws.com/asl-tab-api-data/data.json';
+const DEFAULT_IFRAME_SRC = 'https://www.youtube.com/embed/playlist?list=UUZy9xs6Tn9vWqN_5l0EEIZA&rel=0&mute=1'; // ASL signs playlist
+const DEFAULT_HEADING_TEXT = 'ASL Tab';
 
-let player = null;
-let numVideos = NUM_VIDEOS_IN_PLAYLIST_EMBED; // Number of videos available to randomize from
+let videosData = [];
 
 // DOM Elements
-let iFrameElement = document.getElementById(IFRAME_ID);
-const iFrameWrapperElement = document.getElementById('iframe-wrapper');
-const pageHeading = document.getElementById('pageHeading');
+const iframeContainerEl = document.getElementById('iframe-container');
+const headingEl = document.getElementById('heading');
 
-/*
-  Given a base URL and an object of query parameters as key/value pairs,
-  returns a composed query parameter URL
-*/
-const composeEndpointUrl = function(baseUrl, queryParams) {
-  const queryParamsArray = Object.entries(queryParams).map(([key, value]) => {
-    return `${key}=${encodeURIComponent(value)}`;
-  });
-  return `${baseUrl}?${queryParamsArray.join('&')}`;
+// Gets a random number in a given range
+const getRandomNumber = function(min = 0, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Returns true if the video is valid
-const checkVideo = function() {
-  const parsedIframeUrl = new URL(iFrameElement.src);
-  const iframeVideoIndex = parseInt(parsedIframeUrl.searchParams.get('index'), 10);
-  const playerVideoIndex = player.getPlaylistIndex();
-  const videoDuration = player.getDuration(); // seconds
+// Updates heading element's text
+const updateHeadingText = function(text) {
+  headingEl.textContent = text;
+}
 
-  if (videoDuration > MAX_VIDEO_DURATION) {
+// Inserts iframe into the iframeContainerEl
+const insertIframe = function(src) {
+  // Create an iFrame
+  const iframe = document.createElement('iframe');
+  iframe.frameBorder = 0;
+  iframe.allow = 'fullscreen';
+  iframe.src = src;
+
+  // Append it inside iframeContainerEl
+  iframeContainerEl.appendChild(iframe);
+}
+
+// Replaces iframe src so it stops autoplaying
+// Workaround due to not being able to use YouTube iframe player API for Firefox
+const stopAutoplay = function() {
+  const iframe = iframeContainerEl.querySelector('iframe');
+  const iframeSrc = iframe.src;
+  const newIframeSrc = iframeSrc.replace('&autoplay=1', '');
+  iframe.remove();
+  insertIframe(newIframeSrc);
+}
+
+// Gets fresh videos data, returns false otherwise
+const getVideosData = async function() {
+  const response = await fetch(VIDEOS_DATA_ENDPOINT);
+  return response.ok ? response.json() : false;
+}
+
+// Check if video can be played
+const checkVideosItem = function(videosItem) {
+
+  // Check if duration is acceptable
+  if (videosItem.duration > MAX_VIDEO_DURATION) {
     return false;
   }
 
-  // If the videoIndex doesn't match randomVideoIndex, try a different video within 100 (thinking it means the getting a video outside of NUM_VIDEOS_IN_PLAYLIST_EMBED hack stopped working)
-  if (iframeVideoIndex !== playerVideoIndex) {
-    numVideos = NUM_VIDEOS_IN_PLAYLIST_EMBED;
+  // Check if video has been recently played
+  const videosItemLastPlayed = localStorage.getItem(videosItem.id);
+  if (videosItemLastPlayed && Date.now() - videosItemLastPlayed < REPEAT_VIDEO_DURATION) {
     return false;
   }
 
   return true;
 }
 
-// Get a random video position (1-indexed)
-const getRandomVideoPosition = function() {
-  const randomVideoPosition = Math.floor(Math.random() * numVideos);
-  const storedVideoPositionDate = localStorage.getItem(randomVideoPosition);
-  const storedVideoPositionExpired = Date.now() - storedVideoPositionDate > STORED_VIDEO_POSITION_DURATION;
+// Gets a random item from videos data with playing time less than MAX_VIDEO_DURATION
+const getVideosItem = function() {
+  const videosDataLength = videosData.length;
+  let videosItem = undefined;
+  let rollCount = 0;
 
-  // Re-roll once if the video position is not expired
-  if (!storedVideoPositionExpired) {
-    return Math.floor(Math.random() * numVideos);
-  } else {
-    localStorage.setItem(randomVideoPosition, Date.now());
-    return randomVideoPosition;
+  while (true) {
+    const videoIndex = getRandomNumber(0, videosDataLength - 1);
+    videosItem = videosData[videoIndex];
+    rollCount++;
+
+    if (rollCount > MAX_ROLL_COUNT || checkVideosItem(videosItem)) {
+      break;
+    }
   }
+
+  localStorage.setItem(videosItem.id, Date.now());
+  return videosItem;
 }
 
-/*
-  Plays a random video
-  NOTE: There is a method in the IFrame Player API to set the playlist position,
-  but that doesn't allow setting a position beyond NUM_VIDEOS_IN_PLAYLIST_EMBED
-  REF: https://developers.google.com/youtube/iframe_api_reference#playVideoAt
-*/
-const playRandomVideo = async function() {
-  let randomVideoIndex = getRandomVideoPosition() - 1;
+// Main program
+const init = async function() {
+  // Set fallback iframe src and heading text
+  let newIframeSrc = DEFAULT_IFRAME_SRC;
+  let newHeadingText = DEFAULT_HEADING_TEXT;
 
-  const iFrameSrc = iFrameElement.src;
+  // Get videos data
+  videosData = await getVideosData();
 
-  if (player) {
-    player.destroy();
+  if (videosData.length) {
+    // Embed a random video from the entire playlist
+    const videosItem = getVideosItem();
+    const videoId = videosItem.id;
+    const videoTitle = videosItem.title;
 
-    // Recreate IFrame
-    iFrameElement = document.createElement('iframe');
-
-    // Add default attributes
-    iFrameElement.src = iFrameSrc;
-    iFrameElement.id = IFRAME_ID;
-    iFrameElement.frameBorder = 0;
-    iFrameElement.allow = 'fullscreen';
-
-    iFrameWrapperElement.appendChild(iFrameElement);
+    // NOTE: playlist param set to video ID to enable looping as looping is only enabled on playlist embeds and this magically makes it into a valid playlist
+    newIframeSrc = `https://www.youtube.com/embed/${ videoId }?&playlist=${ videoId }&loop=1&autoplay=1&mute=1`;
+    newHeadingText = videoTitle;
+  } else {
+    // Embed a random video from the latest 100 items of the playlist
+    // 100 is the actual amount of videos expected in the playlist
+    const videoIndex = getRandomNumber(0, 100);
+    newIframeSrc = `${ DEFAULT_IFRAME_SRC }&index=${ videoIndex }&autoplay=1&mute=1`;
   }
 
-  // Set index query parameter of iFrameElement
-  const parsedIframeUrl = new URL(iFrameSrc);
-  parsedIframeUrl.searchParams.set('index', randomVideoIndex);
-  iFrameElement.src = parsedIframeUrl.href;
+  // Insert the iFrame into page
+  insertIframe(newIframeSrc);
 
-  // Wait for iframe src to update
-  await new Promise((resolve, reject) => {
-    setTimeout(resolve);
+  // Update heading text
+  updateHeadingText(newHeadingText);
+
+  // Stop playing video when document is hidden, or when 1 minute passes
+  window.addEventListener('visibilitychange', (e) => {
+    if (document.hidden) {
+      stopAutoplay();
+    }
   });
 
-  // Ensure YouTube IFrame API is ready
-  await youtubeIframeApiPromise;
-
-  // Create player instance from YouTube IFrame embed
-  return new Promise((resolve, reject) => {
-    player = new YT.Player(IFRAME_ID, {
-      events: {
-        onReady: async () => {
-          // Check if video is good
-          if (checkVideo()) {
-            // Get info of currently playing video
-            const videoUrl = player.getVideoUrl();
-            const parsedVideoUrl = new URL(videoUrl);
-            const videoId = parsedVideoUrl.searchParams.get('v');
-
-            // Change playlist embed into a single video embed
-            player.loadVideoById(videoId);
-
-            player.playVideo();
-
-            // Update title and heading text
-            fetch(
-              composeEndpointUrl(
-                'https://www.googleapis.com/youtube/v3/videos',
-                {
-                  'key': YOUTUBE_API_KEY,
-                  'part': 'snippet',
-                  'id': videoId,
-                }
-              )
-            )
-            .then(response => response.json())
-            .then((data) => {
-              if (data.items.length) {
-                const videoTitle = data.items[0].snippet.title;
-                document.title += ` | ${ videoTitle }`;
-                pageHeading.textContent = videoTitle;
-              }
-            })
-            .catch(error => console.error('Error:', error));
-          } else {
-            // Randomize again
-            await playRandomVideo();
-          }
-
-          resolve();
-        },
-        onStateChange: (event) => {
-          // Fake loop the video
-          // NOTE: Playlists can be looped via YouTube API, but single videos cannot
-          if (event.data === YT.PlayerState.ENDED) {
-            player.playVideo();
-          }
-        }
-      }
-    });
-  });
-
+  setTimeout(stopAutoplay, 60 * 1000);
 }
 
-// Create promise for onYouTubeIframeAPIReady
-const youtubeIframeApiPromise = new Promise((resolve, reject) => {
-  window.onYouTubeIframeAPIReady = function() {
-    resolve();
-    delete window.onYouTubeIframeAPIReady;
-  }
-});
-
-const updateNumVideos = function() {
-  const storedNumVideos = localStorage.getItem('NUM_VIDEOS');
-  const storedNumVideosDate = localStorage.getItem('NUM_VIDEOS_DATE');
-  const storedNumVideosExpired = Date.now() - storedNumVideosDate > STORED_NUM_VIDEOS_DURATION;
-
-  if (!storedNumVideosExpired && storedNumVideos >= NUM_VIDEOS_IN_PLAYLIST_EMBED) {
-    // Use the value from LocalStorage
-    numVideos = storedNumVideos;
-  } else {
-    // Use the actual number of videos in playlist
-    fetch(
-      composeEndpointUrl(
-        'https://www.googleapis.com/youtube/v3/playlists',
-        {
-          'key': YOUTUBE_API_KEY,
-          'id': PLAYLIST_ID,
-          'part': 'contentDetails',
-        }
-      )
-    )
-    .then(response => response.json())
-    .then((data) => {
-      if (data.items.length) {
-        numVideos = data.items[0].contentDetails.itemCount;
-        localStorage.setItem('NUM_VIDEOS', numVideos);
-        localStorage.setItem('NUM_VIDEOS_DATE', Date.now());
-      }
-    })
-    .catch(error => console.error('Error:', error));
-  }
-}
-
-// Main JS
-updateNumVideos();
-playRandomVideo();
+// Run the program
+init();
