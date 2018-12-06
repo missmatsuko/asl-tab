@@ -40,11 +40,8 @@ const stopAutoplay = function() {
   const iframe = iframeContainerEl.querySelector('iframe');
   const iframeSrc = iframe.src;
   const newIframeSrc = iframeSrc.replace('&autoplay=1', '');
-
-  if (iframeSrc !== newIframeSrc) {
-    iframe.remove();
-    insertIframe(newIframeSrc);
-  }
+  iframe.remove();
+  insertIframe(newIframeSrc);
 }
 
 // Gets fresh videos data, returns false otherwise
