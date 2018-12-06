@@ -1,0 +1,21 @@
+{
+  "name": "asl-tab",
+  "version": "2.0.0",
+  "description": "Loads a random, short American Sign Language (ASL) instructional video in new tabs. Videos from Dr. Bill Vicars of LifePrint/ASLU.",
+  "main": "index.js",
+  "scripts": {
+    "start": "echo \"Error: no start specified\" && exit 1",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "package": "rm -f dist.zip && zip -r dist.zip manifest.json icons newTab.html newTab.css newTab.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/missmatsuko/asl-tab.git"
+  },
+  "author": "Matsuko Friedland <info@matsuko.ca> (https://matsuko.ca)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/missmatsuko/asl-tab/issues"
+  },
+  "homepage": "https://github.com/missmatsuko/asl-tab#readme"
+}
