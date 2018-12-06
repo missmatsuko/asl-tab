@@ -1,6 +1,7 @@
 // Global Variables
 const MAX_VIDEO_DURATION = 10; // Max duration of videos to play, in seconds
 const MAX_ROLL_COUNT = 50; // Max times to reroll for random video
+const REPEAT_VIDEO_DURATION = 24 * 60 * 60 * 1000; // Min (ideal) duration before repeating a video, in milliseconds
 const VIDEOS_DATA_ENDPOINT = 'https://s3.ca-central-1.amazonaws.com/asl-tab-api-data/data.json';
 const DEFAULT_IFRAME_SRC = 'https://www.youtube.com/embed/playlist?list=UUZy9xs6Tn9vWqN_5l0EEIZA&rel=0&mute=1'; // ASL signs playlist
 const DEFAULT_HEADING_TEXT = 'ASL Tab';
@@ -52,6 +53,23 @@ const getVideosData = async function() {
   return response.ok ? response.json() : false;
 }
 
+// Check if video can be played
+const checkVideosItem = function(videosItem) {
+
+  // Check if duration is acceptable
+  if (videosItem.duration > MAX_VIDEO_DURATION) {
+    return false;
+  }
+
+  // Check if video has been recently played
+  const videosItemLastPlayed = localStorage.getItem(videosItem.id);
+  if (videosItemLastPlayed && Date.now() - videosItemLastPlayed < REPEAT_VIDEO_DURATION) {
+    return false;
+  }
+
+  return true;
+}
+
 // Gets a random item from videos data with playing time less than MAX_VIDEO_DURATION
 const getVideosItem = function() {
   const videosDataLength = videosData.length;
@@ -63,11 +81,12 @@ const getVideosItem = function() {
     videosItem = videosData[videoIndex];
     rollCount++;
 
-    if (rollCount > MAX_ROLL_COUNT || videosItem.duration <= MAX_VIDEO_DURATION) {
+    if (rollCount > MAX_ROLL_COUNT || checkVideosItem(videosItem)) {
       break;
     }
   }
 
+  localStorage.setItem(videosItem.id, Date.now());
   return videosItem;
 }
 
