@@ -3,7 +3,7 @@ html, body {
   background-color: black;
   color: white;
   height: 100%;
-  font-family: 'Cousine', monospace;
+  font-family: monospace;
 }
 
 main {
