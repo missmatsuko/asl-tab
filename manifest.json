@@ -15,9 +15,13 @@
     "https://www.youtube.com/*",
     "https://www.googleapis.com/*"
   ],
+  "minimum_chrome_version": "79.0",
   "browser_specific_settings": {
+    "edge": {
+      "strict_min_version": "79.0"
+    },
     "gecko": {
-      "strict_min_version": "54.0"
+      "strict_min_version": "67.0"
     }
   }
 }
