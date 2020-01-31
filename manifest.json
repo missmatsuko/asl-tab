@@ -14,5 +14,10 @@
   "permissions": [
     "https://www.youtube.com/*",
     "https://www.googleapis.com/*"
-  ]
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "strict_min_version": "54.0"
+    }
+  }
 }
