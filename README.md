@@ -3,6 +3,7 @@ Loads a random, short American Sign Language (ASL) instructional video in new ta
 
 ## Download the browser extension:
 - [Chrome](https://chrome.google.com/webstore/detail/asl-tab/bjiakmejoofpfclmopcfpkopmamecnkd)
+- [Edge](https://microsoftedge.microsoft.com/addons/detail/gebaghkpmngpplmofmmneofdfllnglek)
 - [Firefox](https://addons.mozilla.org/en-US/firefox/addon/asl-tab/)
 
 ## Thanks
