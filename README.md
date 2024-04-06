@@ -1,10 +1,8 @@
 # asl-tab
 Loads a random, short American Sign Language (ASL) instructional video in new tabs. Videos from [Dr. Bill Vicars of LifePrint/ASLU](https://www.youtube.com/channel/UCZy9xs6Tn9vWqN_5l0EEIZA).
 
-## Download the browser extension:
-- [Chrome](https://chrome.google.com/webstore/detail/asl-tab/bjiakmejoofpfclmopcfpkopmamecnkd)
-- [Edge](https://microsoftedge.microsoft.com/addons/detail/gebaghkpmngpplmofmmneofdfllnglek)
-- [Firefox](https://addons.mozilla.org/en-US/firefox/addon/asl-tab/)
+<!--## Download the browser extension:
+- [Chrome](https://chrome.google.com/webstore/detail/asl-tab/bjiakmejoofpfclmopcfpkopmamecnkd)-->
 
 ## Thanks
 - Dr. Bill Vicars of ASLU (LifePrint) for content - [YouTube](https://www.youtube.com/user/billvicars), [Website](http://lifeprint.com/)
